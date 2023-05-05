@@ -52,6 +52,7 @@ def train(
             x = x.numpy()
             y = y.numpy()
             model, opt_state, batch_train_loss = make_step(model, opt_state, x, y)
+            batch_train_loss = batch_train_loss.item()
             batch_losses.append(batch_train_loss)
 
             wandb.log({"batch_train_loss": batch_train_loss, "batch": i+len(trainloader)*epoch})

@@ -27,6 +27,6 @@ def evaluate(model, testloader: DataLoader):
         y = y.numpy()
         # Note that all the JAX operations happen inside `loss` and `compute_accuracy`,
         # and both have JIT wrappers, so this is fast.
-        avg_loss += loss(model, x, y)
-        avg_acc += compute_accuracy(model, x, y)
+        avg_loss += loss(model, x, y).item()
+        avg_acc += compute_accuracy(model, x, y).item()
     return avg_loss / len(testloader), avg_acc / len(testloader)
