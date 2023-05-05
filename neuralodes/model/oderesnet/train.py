@@ -68,7 +68,7 @@ def train(
         
         epoch_test_loss, epoch_test_accuracy = evaluate(model, testloader)
         print(
-            f"{epoch=}, epoch_test_loss={epoch_test_loss.item()}, epoch_test_accuracy={epoch_test_accuracy.item()}"
+            f"{epoch=}, epoch_test_loss={epoch_test_loss}, epoch_test_accuracy={epoch_test_accuracy}"
         )
         wandb.log({"epoch_test_loss": epoch_test_loss, "epoch_test_accuracy": epoch_test_accuracy, "epoch": epoch})
 
