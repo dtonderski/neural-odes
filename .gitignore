@@ -162,5 +162,5 @@ cython_debug/
 # Misc
 .vscode
 wandb
-data
+/data/
 server_out
