@@ -1,0 +1,15 @@
+name: neural-odes
+channels:
+  - conda-forge
+  - nvidia
+dependencies:
+  - python=3.10.4
+  # Jax
+  - jaxlib=*=*cuda* 
+  - jax 
+  - cuda-nvcc
+  # Misc
+  - jupyterlab
+  - pip
+  - pip:
+    - -r requirements.txt
