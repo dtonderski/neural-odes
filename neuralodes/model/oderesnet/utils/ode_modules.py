@@ -1,13 +1,13 @@
 from typing import Callable
 
 import diffrax
+from diffrax.solver.base import AbstractSolver
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jrandom
 
 from .modules import ConcatConv2D, norm
-
 
 class ODEFunc(eqx.Module):
     norm1: eqx.Module
@@ -39,15 +39,17 @@ class ODEFunc(eqx.Module):
 class ODEBlock(eqx.Module):
     odefunc: ODEFunc
     integration_time: jnp.ndarray
+    solver: AbstractSolver
 
-    def __init__(self, key):
-        self.odefunc = ODEFunc(64, key)
+    def __init__(self, key, solver_name: str = 'Tsit5', width = 64):
+        self.odefunc = ODEFunc(width, key)
+        self.solver = get_solver(solver_name)
         self.integration_time = jnp.array([0, 1])
 
     def __call__(self, x):
         solution = diffrax.diffeqsolve(
             diffrax.ODETerm(self.odefunc),
-            diffrax.Tsit5(),
+            self.solver,
             t0 = self.integration_time[0],
             t1 = self.integration_time[1],
             dt0 = None,
@@ -64,3 +66,30 @@ class ODEBlock(eqx.Module):
     @nfe.setter
     def nfe(self, value):
         self.odefunc.nfe = value
+
+def get_solver(solver_name: str = 'Tsit5') -> AbstractSolver:
+    match solver_name.lower():
+        case 'euler':
+            return diffrax.Euler()
+        case 'tsit5':
+            return diffrax.Tsit5()
+        case 'heun':
+            return diffrax.Heun()
+        case 'midpoint':
+            return diffrax.Midpoint()
+        case 'ralston':
+            return diffrax.Ralston()
+        case 'bosh3':
+            return diffrax.Bosh3()
+        case 'dopri5':
+            return diffrax.Dopri5()
+        case 'dopri8':
+            return diffrax.Dopri8()
+        # case 'impliciteuler':
+        #     return diffrax.ImplicitEuler()
+        # case 'kvaerno3':
+        #     return diffrax.Kvaerno3()
+        # case 'kvaerno4':
+        #     return diffrax.Kvaerno4()
+        # case 'kvaerno5':
+        #     return diffrax.Kvaerno4()

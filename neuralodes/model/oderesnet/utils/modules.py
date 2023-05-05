@@ -33,13 +33,13 @@ def conv1x1(in_planes, out_planes, key, stride=1):
 
 class DownsamplingBlock(eqx.Module):
     layers: list
-    def __init__(self, key):
+    def __init__(self, key, width=64):
         key0, key1, key2, key3, key4 = jrandom.split(key, 5)
 
         self.layers = [
-            eqx.nn.Conv2d(1, 64, 3, 1, key = key0),
-            ResBlock(64, 64, stride=2, downsample = conv1x1(64,64, key1, stride = 2), key=key2),
-            ResBlock(64, 64, stride=2, downsample = conv1x1(64,64, key3, stride = 2), key=key4),
+            eqx.nn.Conv2d(1, width, 3, 1, key = key0),
+            ResBlock(width, width, stride=2, downsample = conv1x1(width,width, key1, stride = 2), key=key2),
+            ResBlock(width, width, stride=2, downsample = conv1x1(width,width, key3, stride = 2), key=key4),
         ]
 
     def __call__(self, x:Float[Array, "1 28 28"]):
@@ -50,13 +50,13 @@ class DownsamplingBlock(eqx.Module):
 
 class FCBlock(eqx.Module):
     layers: list
-    def __init__(self, key):
+    def __init__(self, key, width = 64):
         self.layers = [
-            norm(64),
+            norm(width),
             jax.nn.relu,
             eqx.nn.AdaptiveAvgPool2d((1,1)),
             jnp.ravel,
-            eqx.nn.Linear(64,10, key=key),
+            eqx.nn.Linear(width,10, key=key),
             jax.nn.log_softmax
         ]
     def __call__(self, x:Float[Array, "1 28 28"]):
