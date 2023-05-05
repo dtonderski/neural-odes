@@ -163,3 +163,4 @@ cython_debug/
 .vscode
 wandb
 data
+server_out

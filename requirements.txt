@@ -1,15 +1,15 @@
 --find-links https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-jax==0.3.23
-jaxlib==0.3.22+cuda11.cudnn82
+jax==0.4.8
+jaxlib==0.4.7+cuda12.cudnn88
 matplotlib==3.5.2
-diffrax
-optax==0.1.2
+diffrax==0.3.1
+optax==0.1.5
 # Using this because newer versions require jax >= 0.4.8 
 orbax-checkpoint==0.1.1
-flax
+flax==0.6.9
 --extra-index-url https://download.pytorch.org/whl/cu113
 torch==1.11.0+cu113
 torchvision==0.12.0+cu113
 wandb==0.12.17
-fire
+fire==0.5.0
 tqdm==4.64.0
