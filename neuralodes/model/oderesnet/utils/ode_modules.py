@@ -1,13 +1,13 @@
 from typing import Callable
 
 import diffrax
-from diffrax.solver.base import AbstractSolver
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jrandom
 
 from .modules import ConcatConv2D, norm
+
 
 class ODEFunc(eqx.Module):
     norm1: eqx.Module
@@ -39,23 +39,21 @@ class ODEFunc(eqx.Module):
 class ODEBlock(eqx.Module):
     odefunc: ODEFunc
     integration_time: jnp.ndarray
-    solver: AbstractSolver
-    solver_kwargs: dict # contains dt0 if not Euler or stepsize_controller if Euler
 
-    def __init__(self, key, solver_name: str = 'Tsit5', width = 64, steps_if_euler = 6):
-        self.odefunc = ODEFunc(width, key)
+    def __init__(self, key):
+        self.odefunc = ODEFunc(64, key)
         self.integration_time = jnp.array([0, 1])
-        self.solver, self.solver_kwargs = get_solver_params(solver_name, steps_if_euler, self.integration_time)
 
     def __call__(self, x):
         solution = diffrax.diffeqsolve(
             diffrax.ODETerm(self.odefunc),
-            self.solver,
+            diffrax.Tsit5(),
             t0 = self.integration_time[0],
             t1 = self.integration_time[1],
+            dt0 = None,
             y0 = x,
+            stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-6),
             saveat=diffrax.SaveAt(ts=self.integration_time),
-            **self.solver_kwargs
         )
         return solution.ys[1]
 
@@ -66,30 +64,3 @@ class ODEBlock(eqx.Module):
     @nfe.setter
     def nfe(self, value):
         self.odefunc.nfe = value
-
-def get_solver_params(solver_name: str = 'Tsit5', steps_if_euler: int = 6, integration_time: jnp.ndarray = jnp.array([0, 1])) -> dict:
-    match solver_name.lower():
-        case 'euler':
-            return diffrax.Euler(), {'dt0': (integration_time[1] - integration_time[0])/steps_if_euler} 
-        case 'tsit5':
-            return diffrax.Tsit5(), {'stepsize_controller': diffrax.PIDController(rtol=1e-3, atol=1e-6)}
-        case 'heun':
-            return diffrax.Heun(), {'stepsize_controller': diffrax.PIDController(rtol=1e-3, atol=1e-6)}
-        case 'midpoint':
-            return diffrax.Midpoint(), {'stepsize_controller': diffrax.PIDController(rtol=1e-3, atol=1e-6)}
-        case 'ralston':
-            return diffrax.Ralston(), {'stepsize_controller': diffrax.PIDController(rtol=1e-3, atol=1e-6)}
-        case 'bosh3':
-            return diffrax.Bosh3(), {'stepsize_controller': diffrax.PIDController(rtol=1e-3, atol=1e-6)}
-        case 'dopri5':
-            return diffrax.Dopri5(), {'stepsize_controller': diffrax.PIDController(rtol=1e-3, atol=1e-6)}
-        case 'dopri8':
-            return diffrax.Dopri8(), {'stepsize_controller': diffrax.PIDController(rtol=1e-3, atol=1e-6)}
-        # case 'impliciteuler':
-        #     return diffrax.ImplicitEuler()
-        # case 'kvaerno3':
-        #     return diffrax.Kvaerno3()
-        # case 'kvaerno4':
-        #     return diffrax.Kvaerno4()
-        # case 'kvaerno5':
-        #     return diffrax.Kvaerno4()
