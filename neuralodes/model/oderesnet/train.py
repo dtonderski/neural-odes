@@ -13,6 +13,7 @@ from neuralodes.model.oderesnet.evaluation import evaluate
 from neuralodes.model.oderesnet.loss import loss
 from neuralodes.model.oderesnet.odenet import ODENet
 from neuralodes.model.oderesnet.resnet import ResNet
+from neuralodes.model.oderesnet.serialization import save_model
 from torch.utils.data import DataLoader
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"]="false"
