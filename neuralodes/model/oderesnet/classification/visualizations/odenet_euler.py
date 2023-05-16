@@ -8,9 +8,9 @@ from matplotlib import pyplot as plt
 
 
 from neuralodes.data.dataloader import get_dataloaders
-from neuralodes.model.oderesnet.evaluation import evaluate
-from neuralodes.model.oderesnet.odenet import ODENet, ODENetEulerWrapper
-from neuralodes.model.oderesnet.resnet import ResNet
+from neuralodes.model.oderesnet.classification.evaluation import evaluate
+from neuralodes.model.oderesnet.classification.odenet import ODENet, ODENetEulerWrapper
+from neuralodes.model.oderesnet.classification.resnet import ResNet
 
 def main(loaded_solver_name = 'Tsit5', max_steps = 20, save_path = None):
     save_path = Path(save_path) if save_path is not None else Path("visualizations", "odenet_euler", loaded_solver_name)

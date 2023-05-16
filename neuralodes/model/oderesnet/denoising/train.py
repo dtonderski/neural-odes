@@ -8,12 +8,11 @@ import numpy as np
 import optax
 import tqdm
 import wandb
-from neuralodes.data import dataloader
-from neuralodes.model.oderesnet.evaluation import evaluate
-from neuralodes.model.oderesnet.loss import loss
-from neuralodes.model.oderesnet.odenet import ODENet
-from neuralodes.model.oderesnet.resnet import ResNet
-from neuralodes.model.oderesnet.serialization import save_model
+from neuralodes.data.denoising import dataloader
+from neuralodes.model.oderesnet.denoising.evaluation import evaluate
+from neuralodes.model.oderesnet.denoising.loss import loss
+from neuralodes.model.oderesnet.denoising.odenet import ODENet
+from neuralodes.model.oderesnet.denoising.resnet import ResNet
 from torch.utils.data import DataLoader
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"]="false"
@@ -65,8 +64,8 @@ def train(
             wandb.log({"batch_train_loss": batch_train_loss, "batch": i+len(trainloader)*epoch})
             
             if (i % evaluate_every) == 0 or (i == len(trainloader) - 1):
-                batch_test_loss, batch_test_accuracy = evaluate(model, testloader)
-                wandb.log({"batch_test_loss": batch_test_loss, "batch_test_accuracy": batch_test_accuracy, "batch": i+len(trainloader)*epoch})
+                batch_test_loss = evaluate(model, testloader)
+                wandb.log({"batch_test_loss": batch_test_loss, "batch": i+len(trainloader)*epoch})
                 
                 if batch_test_loss < min_test_loss:
                     min_test_loss = batch_test_loss
@@ -78,23 +77,23 @@ def train(
         wandb.log({"train_loss": epoch_train_loss, "epoch": epoch})
 
         
-        epoch_test_loss, epoch_test_accuracy = evaluate(model, testloader)
+        epoch_test_loss = evaluate(model, testloader)
         print(
-            f"{epoch=}, epoch_test_loss={epoch_test_loss}, epoch_test_accuracy={epoch_test_accuracy}"
+            f"{epoch=}, epoch_test_loss={epoch_test_loss}"
         )
-        wandb.log({"epoch_test_loss": epoch_test_loss, "epoch_test_accuracy": epoch_test_accuracy, "epoch": epoch})
+        wandb.log({"epoch_test_loss": epoch_test_loss, "epoch": epoch})
 
     return model
 
-def get_name(model_type, dataset, solver, width):
-    return f"{model_type}_{dataset}_{solver}_{width}"    
+def get_name(model_type, noise_std, dataset, solver, width):
+    return f"denoising_{model_type}_noise{noise_std}_{dataset}_{solver}_{width}"    
 
-def main(model_type: str = "odenet", dataset: str = 'fashionmnist', solver: str = 'Tsit5', width = 64,
-         learning_rate: float = 3e-4, batch_size = 256, seed: int = 5678, num_epochs = 20, evaluate_every = 100):
-    train_dataloader, test_dataloader = dataloader.get_dataloaders(dataset, batch_size)
+def main(model_type: str = "odenet", noise_std: float = 0.3, dataset: str = 'fashionmnist', solver: str = 'Tsit5', width = 64,
+         learning_rate: float = 3e-4, batch_size = 64, seed: int = 5678, num_epochs = 20, evaluate_every = 100):
+    train_dataloader, test_dataloader = dataloader.get_dataloaders(noise_std, dataset, batch_size)
     key = jrandom.PRNGKey(seed)
     
-    name = get_name(model_type, dataset, solver, width)
+    name = get_name(model_type, noise_std, dataset, solver, width)
     
     wandb.init(
         entity='davton',
@@ -111,10 +110,7 @@ def main(model_type: str = "odenet", dataset: str = 'fashionmnist', solver: str 
     wandb.define_metric("epoch_train_loss", step_metric="epoch")
     
     wandb.define_metric("batch_test_loss", step_metric="batch")
-    wandb.define_metric("batch_test_accuracy", step_metric="batch")
-    
     wandb.define_metric("epoch_test_loss", step_metric="epoch")
-    wandb.define_metric("epoch_test_accuracy", step_metric="epoch")
 
 
 
