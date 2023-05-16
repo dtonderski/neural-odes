@@ -86,3 +86,32 @@ class ResBlock(eqx.Module):
         for layer in self.layers:
             x = layer(x) if layer is not None else x
         return x + shortcut
+
+class DenoisingFinalBlock(eqx.Module):
+    layers: list
+    
+    def __init__(self, key, width: int = 64):
+        self.layers = [
+            norm(width),
+            jax.nn.relu,
+            eqx.nn.Conv2d(width, 1, kernel_size=3, stride=1, padding=1, key = key),
+            jax.nn.sigmoid,
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+    
+class DenoisingFirstBlock(eqx.Module):
+    layers: list
+
+    def __init__(self, key, width: int = 64):
+        self.layers = [
+            eqx.nn.Conv2d(1, width, kernel_size=3, stride=1, padding=1, key = key),
+        ]
+    
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x

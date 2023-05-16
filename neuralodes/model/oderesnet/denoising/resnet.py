@@ -3,8 +3,7 @@ import jax
 import jax.random as jrandom
 from jaxtyping import Array, Float
 
-from ..utils.modules import ResBlock
-
+from ..utils.modules import ResBlock, DenoisingFirstBlock, DenoisingFinalBlock
 
 class ResBlocks(eqx.Module):
     layers: list
@@ -21,12 +20,11 @@ class ResBlocks(eqx.Module):
 class ResNet(eqx.Module):
     layers: list
     def __init__(self, key, width=64):
-        key0, key1 = jrandom.split(key, 2)
+        key0, key1, key2 = jrandom.split(key, 3)
         self.layers = [
-            eqx.nn.Conv2d(1, width, kernel_size=3, stride=1, padding=1, key = key0),
+            DenoisingFirstBlock(key0, width),
             ResBlocks(key1, width),
-            eqx.nn.Conv2d(width, 1, kernel_size=3, stride=1, padding=1, key = key0),
-            jax.nn.sigmoid
+            DenoisingFinalBlock(key2, width)
             ]
 
     def __call__(self, x:Float[Array, "1 H W"]):
