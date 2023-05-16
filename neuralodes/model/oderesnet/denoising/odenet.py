@@ -14,6 +14,7 @@ class ODENet(eqx.Module):
         self.layers = [
             eqx.nn.Conv2d(1, width, kernel_size=3, stride=1, padding=1, key = key0),
             ODEBlock(key1, solver_name, width),
+            eqx.nn.Conv2d(width, 1, kernel_size=3, stride=1, padding=1, key = key0),
             jax.nn.sigmoid
             ]
         

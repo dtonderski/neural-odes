@@ -25,6 +25,7 @@ class ResNet(eqx.Module):
         self.layers = [
             eqx.nn.Conv2d(1, width, kernel_size=3, stride=1, padding=1, key = key0),
             ResBlocks(key1, width),
+            eqx.nn.Conv2d(width, 1, kernel_size=3, stride=1, padding=1, key = key0),
             jax.nn.sigmoid
             ]
 
