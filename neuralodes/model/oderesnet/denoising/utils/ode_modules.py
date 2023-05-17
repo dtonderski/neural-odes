@@ -1,5 +1,3 @@
-from typing import Callable
-
 import diffrax
 import equinox as eqx
 import jax
@@ -7,43 +5,44 @@ import jax.numpy as jnp
 import jax.random as jrandom
 from diffrax.solver.base import AbstractSolver
 
-from .modules import ConcatConv2D, norm
+
+class ConcatConv2D(eqx.Module):
+    layer: eqx.Module
+
+    def __init__(self, key, dim_in, dim_out, ksize=3, stride=1, padding=0,
+                 dilation=1, groups=1, bias=True, transpose=False):
+        module = eqx.nn.ConvTranspose2d if transpose else eqx.nn.Conv2d
+        self.layer = module(dim_in+1, dim_out, ksize, stride, padding, 
+                            dilation, groups, bias, key=key)
+
+    def __call__(self, t, x):
+        tt = jnp.ones_like(x[:1,:,:]) * t
+        ttx = jnp.concatenate([tt, x], axis=0)
+        return self.layer(ttx)
 
 
 class ODEFunc(eqx.Module):
-    norm1: eqx.Module
-    relu: Callable
     conv1: ConcatConv2D
-    norm2: eqx.Module
     conv2: ConcatConv2D
-    norm3: eqx.Module
 
-    def __init__(self, dim, key):
-        key1, key2 = jrandom.split(key, 2)
-        self.norm1 = norm(dim)
-        self.relu = jax.nn.relu
-        self.conv1 = ConcatConv2D(dim, dim, key1, 3, 1, 1)
-        self.norm2 = norm(dim)
-        self.conv2 = ConcatConv2D(dim, dim, key2, 3, 1, 1)
-        self.norm3 = norm(dim)
+    def __init__(self, key, width):
+        key0, key1 = jrandom.split(key, 2)
+        self.conv1 = ConcatConv2D(key0, width, width, 3, 1, 1)
+        self.conv2 = ConcatConv2D(key1, width, width, 3, 1, 1)
 
     def __call__(self, t, x, args):
-        x = self.norm1(x)
-        x = self.relu(x)
         x = self.conv1(t, x)
-        x = self.norm2(x)
-        x = self.relu(x)
+        x = jax.nn.relu(x)
         x = self.conv2(t, x)
-        x = self.norm3(x)
         return x
-
+    
 class ODEBlock(eqx.Module):
     odefunc: ODEFunc
     integration_time: jnp.ndarray
     solver: AbstractSolver
 
     def __init__(self, key, solver_name: str = 'Tsit5', width = 64):
-        self.odefunc = ODEFunc(width, key)
+        self.odefunc = ODEFunc(key, width)
         self.solver = get_solver(solver_name)
         self.integration_time = jnp.array([0, 1])
 
@@ -59,14 +58,6 @@ class ODEBlock(eqx.Module):
             saveat=diffrax.SaveAt(ts=self.integration_time),
         )
         return solution.ys[1]
-
-    @property
-    def nfe(self):
-        return self.odefunc.nfe
-
-    @nfe.setter
-    def nfe(self, value):
-        self.odefunc.nfe = value
 
 def get_solver(solver_name: str = 'Tsit5') -> AbstractSolver:
     match solver_name.lower():

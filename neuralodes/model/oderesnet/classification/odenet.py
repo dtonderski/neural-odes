@@ -2,8 +2,8 @@ import equinox as eqx
 import jax.random as jrandom
 from jaxtyping import Array, Float
 
-from ..utils.modules import DownsamplingBlock, FCBlock
-from ..utils.ode_modules import ODEBlock, ODEBlockEulerWrapper
+from .utils.modules import DownsamplingBlock, FCBlock
+from .utils.ode_modules import ODEBlock, ODEBlockEulerWrapper
 
 
 class ODENet(eqx.Module):

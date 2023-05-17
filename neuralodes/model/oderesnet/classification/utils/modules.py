@@ -7,20 +7,6 @@ import jax.numpy as jnp
 import jax.random as jrandom
 from jaxtyping import Array, Float
 
-
-class ConcatConv2D(eqx.Module):
-    layer: eqx.Module
-
-    def __init__(self, dim_in, dim_out, key, ksize=3, stride=1, padding=0,
-                 dilation=1, groups=1, bias=True, transpose=False):
-        module = eqx.nn.ConvTranspose2d if transpose else eqx.nn.Conv2d
-        self.layer = module(dim_in+1, dim_out, ksize, stride, padding, 
-                            dilation, groups, bias, key=key)
-
-    def __call__(self, t, x):
-        tt = jnp.ones_like(x[:1,:,:]) * t
-        ttx = jnp.concatenate([tt, x], axis=0)
-        return self.layer(ttx)
         
 def norm(dim):
     return eqx.nn.GroupNorm(groups=min(32, dim), channels=dim)
@@ -86,32 +72,3 @@ class ResBlock(eqx.Module):
         for layer in self.layers:
             x = layer(x) if layer is not None else x
         return x + shortcut
-
-class DenoisingFinalBlock(eqx.Module):
-    layers: list
-    
-    def __init__(self, key, width: int = 64):
-        self.layers = [
-            norm(width),
-            jax.nn.relu,
-            eqx.nn.Conv2d(width, 1, kernel_size=3, stride=1, padding=1, key = key),
-            jax.nn.sigmoid,
-        ]
-
-    def __call__(self, x):
-        for layer in self.layers:
-            x = layer(x)
-        return x
-    
-class DenoisingFirstBlock(eqx.Module):
-    layers: list
-
-    def __init__(self, key, width: int = 64):
-        self.layers = [
-            eqx.nn.Conv2d(1, width, kernel_size=3, stride=1, padding=1, key = key),
-        ]
-    
-    def __call__(self, x):
-        for layer in self.layers:
-            x = layer(x)
-        return x

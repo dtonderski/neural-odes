@@ -87,14 +87,8 @@ def train(
 
 def get_name(model_type, noise_std, dataset, solver, width):
     return f"denoising_{model_type}_noise{noise_std}_{dataset}_{solver}_{width}"    
-
-def main(model_type: str = "odenet", noise_std: float = 0.3, dataset: str = 'fashionmnist', solver: str = 'Tsit5', width = 64,
-         learning_rate: float = 3e-4, batch_size = 64, seed: int = 5678, num_epochs = 20, evaluate_every = 100):
-    train_dataloader, test_dataloader = dataloader.get_dataloaders(noise_std, dataset, batch_size)
-    key = jrandom.PRNGKey(seed)
     
-    name = get_name(model_type, noise_std, dataset, solver, width)
-    
+def initialize_wandb(name:str):
     wandb.init(
         entity='davton',
         # set the wandb project where this run will be logged
@@ -112,15 +106,25 @@ def main(model_type: str = "odenet", noise_std: float = 0.3, dataset: str = 'fas
     wandb.define_metric("batch_test_loss", step_metric="batch")
     wandb.define_metric("epoch_test_loss", step_metric="epoch")
 
-
-
+def get_model(model_type: str, key, solver, width):
     match model_type:
         case "odenet":
-            model = ODENet(key, solver, width)
+            return ODENet(key, solver, width)
         case "resnet":
-            model = ResNet(key, width)
+            return ResNet(key, width)
         case _:
             raise ValueError(f"Unknown model type {model_type}")
+        
+
+def main(model_type: str = "odenet", noise_std: float = 0.5, dataset: str = 'fashionmnist', solver: str = 'Tsit5', width = 64,
+         learning_rate: float = 3e-4, batch_size = 64, seed: int = 5678, num_epochs = 20, evaluate_every = 100):
+    train_dataloader, test_dataloader = dataloader.get_dataloaders(noise_std, dataset, batch_size)
+    key = jrandom.PRNGKey(seed)
+    
+    name = get_name(model_type, noise_std, dataset, solver, width)
+    initialize_wandb(name)
+    model = get_model(model_type, key, solver, width)
+
 
     optim = optax.adamw(learning_rate)
 
