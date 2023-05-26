@@ -47,7 +47,8 @@ def train(
         model = eqx.apply_updates(model, updates)
         return model, opt_state, loss_value
 
-    model_path = pathlib.Path("models", "oderesnet", f"{name}.eqx")
+    model_dir = pathlib.Path("models", "oderesnet", "simple_classification", name)
+    model_dir.mkdir(parents=True, exist_ok=True)
     
     for epoch in range(num_epochs):
         batch_losses = []
@@ -67,10 +68,12 @@ def train(
                 batch_test_loss, batch_test_accuracy = evaluate(model, testloader)
                 wandb.log({"batch_test_loss": batch_test_loss, "batch_test_accuracy": batch_test_accuracy, "batch": i+len(trainloader)*epoch})
                 
+                eqx.tree_serialise_leaves(model_dir / f"epoch{epoch},batch{i}.pkl", model)
+                
                 if batch_test_loss < min_test_loss:
                     min_test_loss = batch_test_loss
                     
-                    eqx.tree_serialise_leaves(model_path, model)
+                    eqx.tree_serialise_leaves(model_dir / f"best.pkl", model)
 
         epoch_train_loss = np.mean(np.array(batch_losses))
         print(f"{epoch=}, train_loss={epoch_train_loss}")

@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, List
 
 import diffrax
 import equinox as eqx
@@ -47,7 +47,7 @@ class ODEFunc(eqx.Module):
         x = self.norm2(x)
         
         return x
-    
+
 class ODEBlock(eqx.Module):
     odefunc: ODEFunc
     integration_time: jnp.ndarray
