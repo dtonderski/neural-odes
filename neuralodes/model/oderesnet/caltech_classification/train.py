@@ -120,8 +120,17 @@ def get_model(model_type: str, key, width, solver, rtol, atol, blocks):
         case _:
             raise ValueError(f"Unknown model type {model_type}")
 
+def get_lr_scheduler(learning_rate):
+    def lr_scheduler(epoch):
+        if epoch < 15:
+            return learning_rate
+        if epoch < 30:
+            return learning_rate/10
+        return learning_rate/100
+    return lr_scheduler
+
 def main(model_type: str = "odenet", width = 64, solver: str = 'Tsit5', rtol: float = 1e-1, atol: float = 1e-2, blocks: int = 6,
-         learning_rate: float = 3e-4, batch_size = 64, seed: int = 5678, num_epochs = 20):
+         learning_rate: float = 1e-1, batch_size = 64, seed: int = 5678, num_epochs = 50):
     train_dataloader, test_dataloader = dataloader.get_dataloaders(batch_size)
     key = jrandom.PRNGKey(seed)
     
@@ -131,7 +140,7 @@ def main(model_type: str = "odenet", width = 64, solver: str = 'Tsit5', rtol: fl
 
     model = get_model(model_type, key, width, solver, rtol, atol, blocks)
 
-    optim = optax.adamw(learning_rate)
+    optim = optax.sgd(learning_rate = get_lr_scheduler(learning_rate), momentum=0.9)
 
     model = train(model, train_dataloader, test_dataloader, optim, num_epochs, name)
 
