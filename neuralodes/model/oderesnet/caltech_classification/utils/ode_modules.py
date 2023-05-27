@@ -58,8 +58,8 @@ class ODEBlock(eqx.Module):
         self.odefunc = ODEFunc(key, width)
         self.solver = get_solver(solver_name)
         self.integration_time = jnp.array([0, 1])
-        self.rtol = 1e-1
-        self.atol = 1e-2
+        self.rtol = rtol
+        self.atol = atol
 
     def __call__(self, x):
         solution = diffrax.diffeqsolve(
