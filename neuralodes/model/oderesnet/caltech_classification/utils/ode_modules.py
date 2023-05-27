@@ -39,24 +39,27 @@ class ODEFunc(eqx.Module):
         self.norm2 = group_norm(width)
 
     def __call__(self, t, x, args):
-        x = jax.nn.relu(x)
         x = self.conv1(t, x)
         x = self.norm1(x)
         x = jax.nn.relu(x)
         x = self.conv2(t, x)
         x = self.norm2(x)
-        
+
         return x
 
 class ODEBlock(eqx.Module):
     odefunc: ODEFunc
     integration_time: jnp.ndarray
     solver: AbstractSolver
+    rtol: float
+    atol: float
 
-    def __init__(self, key, solver_name: str = 'Tsit5', width = 64):
+    def __init__(self, key, solver_name: str = 'Tsit5', width = 64, rtol=1e-1, atol=1e-2):
         self.odefunc = ODEFunc(key, width)
         self.solver = get_solver(solver_name)
         self.integration_time = jnp.array([0, 1])
+        self.rtol = 1e-1
+        self.atol = 1e-2
 
     def __call__(self, x):
         solution = diffrax.diffeqsolve(
@@ -66,8 +69,9 @@ class ODEBlock(eqx.Module):
             t1 = self.integration_time[1],
             dt0 = None,
             y0 = x,
-            stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-6),
+            stepsize_controller=diffrax.PIDController(rtol=self.rtol, atol=self.atol),
             saveat=diffrax.SaveAt(ts=self.integration_time),
+            adjoint=diffrax.BacksolveAdjoint()
         )
         return solution.ys[1]
     
@@ -87,7 +91,7 @@ class ODEBlockWrapper(eqx.Module):
             t1 = self.integration_time[1],
             dt0 = None,
             y0 = x,
-            stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-6),
+            stepsize_controller=diffrax.PIDController(rtol=self.ode_block.rtol, atol=self.ode_block.atol),
             saveat=diffrax.SaveAt(ts=self.integration_time),
         )
         return solution.ys[1]
